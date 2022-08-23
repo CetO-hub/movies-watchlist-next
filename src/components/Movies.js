@@ -13,17 +13,16 @@ const Movies = (props) => {
         return "No description available";
       }
     }
+
     return (
       <>
-        <div className="flex justify-between gap-5 items-center md:justify-start">
+        <div
+          key={movie.imdbID}
+          className="w-full flex justify-between gap-5 items-center md:justify-start"
+        >
           <div className="flex shrink-0 relative h-[150px] w-[100px]">
             {movie.poster !== "N/A" ? (
-              <Image
-                key={movie.imbdID}
-                src={movie.poster}
-                layout="fill"
-                objectFit="cover"
-              />
+              <Image src={movie.poster} layout="fill" objectFit="cover" />
             ) : (
               <h2 className="text-center self-center">No picture available</h2>
             )}
@@ -41,7 +40,10 @@ const Movies = (props) => {
             <div className="text-xs flex font-roboto gap-2 justify-between md:justify-start md:text-lg">
               <h2 className="inline shrink-0">{movie.runtime}</h2>
               <h3 className="inline ml-4">{movie.genre}</h3>
-              <a className="inline whitespace-nowrap cursor-pointer h-fit">
+              <a
+                onClick={(e) => props.addToWatchlist(e, movie.imdbID)}
+                className="inline whitespace-nowrap cursor-pointer h-fit"
+              >
                 <AiFillPlusCircle size={20} className="inline" />
                 Watchlist
               </a>

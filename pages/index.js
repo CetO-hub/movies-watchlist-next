@@ -1,18 +1,22 @@
 import Head from "next/head";
 import Image from "next/image";
 import explore from "../src/img/explore.svg";
-import { AiOutlineSearch } from "react-icons/ai";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import Movies from "../src/components/Movies";
+import Header from "../src/components/Header";
+import { useRouter } from "next/router";
 
 export default function Home(props) {
-  const router = useRouter();
-  const [searchMovie, setSearchMovie] = useState({
-    search: "",
-  });
   const [message, setMessage] = useState("");
+  const [storedMovies, setStoredMovies] = useState(() => {
+    let currentValue;
+    try {
+      currentValue = JSON.parse(localStorage.getItem("storedMovies") || "");
+    } catch (error) {
+      currentValue = "";
+    }
+    return currentValue;
+  });
 
   const [dataMovie, setDataMovie] = useState([
     {
@@ -25,26 +29,21 @@ export default function Home(props) {
       plot: "",
     },
   ]);
+  const router = useRouter();
+  const [searchMovie, setSearchMovie] = useState({
+    search: "",
+  });
 
   useEffect(() => {
-    if (props.movieDetails) {
-      console.log("running");
-      setDataMovie((oldState) => {
-        return props.movieDetails.map((movie) => {
-          return {
-            title: movie.Title,
-            runtime: movie.Runtime,
-            genre: movie.Genre,
-            poster: movie.Poster,
-            imdbRating: movie.imdbRating,
-            imdbID: movie.imdbID,
-            plot: movie.Plot,
-          };
-        });
-      });
-      setMessage("");
-    }
-  }, [props]);
+    localStorage.setItem("storedMovies", JSON.stringify(storedMovies));
+  }, [storedMovies]);
+
+  function addToWatchlist(e, id) {
+    setStoredMovies((oldState) => {
+      let item = dataMovie.filter((movie) => movie.imdbID === id);
+      return [...oldState, ...item];
+    });
+  }
 
   function handleOnChange(e) {
     const { name, value } = e.target;
@@ -74,6 +73,24 @@ export default function Home(props) {
 
     e.preventDefault();
   }
+  useEffect(() => {
+    if (props.movieDetails) {
+      setDataMovie((oldState) => {
+        return props.movieDetails.map((movie) => {
+          return {
+            title: movie.Title,
+            runtime: movie.Runtime,
+            genre: movie.Genre,
+            poster: movie.Poster,
+            imdbRating: movie.imdbRating,
+            imdbID: movie.imdbID,
+            plot: movie.Plot,
+          };
+        });
+      });
+      setMessage("");
+    }
+  }, [props]);
 
   return (
     <div>
@@ -83,41 +100,11 @@ export default function Home(props) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex flex-col items-center">
-        <div className="h-[200px] bg-hero bg-no-repeat bg-[center_top_-12rem] w-full md:bg-cover md:bg-[center_top_-40rem] md:h-[300px] lg:h-[400px] relative flex ">
-          <div className="absolute w-full h-full bg-black/50"></div>
-          <div className="flex md:max-w-[70%] justify-between lg:max-w-[35%] px-8 md:px-0 w-full absolute top-[50%] translate-y-[-50%] md:left-[50%] md:translate-x-[-50%] z-10 text-white">
-            <div className="flex items-center justify-between md:justify-between w-full gap-8 md:gap-0 font md:px-8">
-              <h1 className="text-3xl md:text-5xl font-roboto font-bold">
-                Find your film
-              </h1>
-              <Link href="/watchlist">
-                <a className="text-xs md:text-xl font-roboto">My Watchlist</a>
-              </Link>
-            </div>
-          </div>
-        </div>
-        <form className="-mt-4 w-full md:max-w-[70%]  lg:max-w-[35%] z-20 px-8">
-          <div className="flex justify-between border-2 border-gray-400 rounded-lg bg-white w-full h-full">
-            <label htmlFor="search" className="px-2">
-              <AiOutlineSearch className="inline"></AiOutlineSearch>
-            </label>
-            <input
-              onChange={handleOnChange}
-              name="search"
-              value={searchMovie.search}
-              id="search"
-              type="text"
-              placeholder="Search for a movie"
-              className="ml-2 focus:outline-none w-full"
-            />
-            <button
-              onClick={handleSubmit}
-              className="bg-gray-100 px-4 border-l-2 rounded-r-lg"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        <Header
+          handleOnChange={handleOnChange}
+          handleSubmit={handleSubmit}
+          searchMovie={searchMovie}
+        />
         {message && <h2>{message}</h2>}
         {!dataMovie[0].title ? (
           <div className="h-[calc(100vh-200px)] w-full flex flex-col items-center px-8">
@@ -127,7 +114,7 @@ export default function Home(props) {
             <h2 className="text-gray-400">Start exploring</h2>
           </div>
         ) : (
-          <Movies dataMovie={dataMovie} />
+          <Movies dataMovie={dataMovie} addToWatchlist={addToWatchlist} />
         )}
       </main>
     </div>
@@ -139,7 +126,6 @@ export async function getServerSideProps({ query }) {
     const res = await fetch(
       `http://www.omdbapi.com/?apikey=${process.env.MOVIE_DATABASE_API_KEY}&s=${query.s}&type=movie&series`
     );
-    console.log(res);
 
     const data = await res.json();
     if (data.Response === "False") {
