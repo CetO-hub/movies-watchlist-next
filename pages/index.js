@@ -3,8 +3,80 @@ import Image from "next/image";
 import explore from "../src/img/explore.svg";
 import { AiOutlineSearch } from "react-icons/ai";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Movies from "../src/components/Movies";
 
-export default function Home() {
+export default function Home(props) {
+  const router = useRouter();
+  const [searchMovie, setSearchMovie] = useState({
+    search: "",
+  });
+  const [message, setMessage] = useState("");
+
+  const [dataMovie, setDataMovie] = useState([
+    {
+      title: "",
+      runtime: "",
+      genre: "",
+      poster: "",
+      imdbRating: "",
+      imdbID: "",
+      plot: "",
+    },
+  ]);
+  console.log(dataMovie);
+  useEffect(() => {
+    if (props.movieDetails) {
+      console.log("running");
+      setDataMovie((oldState) => {
+        return props.movieDetails.map((movie) => {
+          return {
+            title: movie.Title,
+            runtime: movie.Runtime,
+            genre: movie.Genre,
+            poster: movie.Poster,
+            imdbRating: movie.imdbRating,
+            imdbID: movie.imdbID,
+            plot: movie.Plot,
+          };
+        });
+      });
+      setMessage("");
+    }
+  }, [props]);
+
+  console.log(dataMovie);
+
+  function handleOnChange(e) {
+    const { name, value } = e.target;
+    setSearchMovie((oldState) => {
+      return {
+        [name]: value,
+      };
+    });
+  }
+
+  function handleSubmit(e) {
+    router.push(`/?s=${searchMovie.search}`);
+    setDataMovie([
+      {
+        title: "",
+        runtime: "",
+        genre: "",
+        poster: "",
+        imdbRating: "",
+        imdbID: "",
+        plot: "",
+      },
+    ]);
+    if (props.message) {
+      setMessage(props.message);
+    }
+
+    e.preventDefault();
+  }
+
   return (
     <div>
       <Head>
@@ -30,23 +102,73 @@ export default function Home() {
               <AiOutlineSearch className="inline"></AiOutlineSearch>
             </label>
             <input
+              onChange={handleOnChange}
+              name="search"
+              value={searchMovie.search}
               id="search"
               type="text"
               placeholder="Search for a movie"
               className="ml-2 focus:outline-none "
             />
-            <button className="bg-gray-100 px-4 border-l-2 rounded-r-lg">
+            <button
+              onClick={handleSubmit}
+              className="bg-gray-100 px-4 border-l-2 rounded-r-lg"
+            >
               Search
             </button>
           </div>
         </form>
-        <div className="h-[calc(100vh-200px)] w-full flex flex-col items-center px-8">
-          <div className="h-[80px] w-[80px] relative mt-32">
-            <Image src={explore} layout="fill" objectFit="cover" />
+        {message && <h2>{message}</h2>}
+        {!dataMovie[0].title ? (
+          <div className="h-[calc(100vh-200px)] w-full flex flex-col items-center px-8">
+            <div className="h-[80px] w-[80px] relative mt-32">
+              <Image src={explore} layout="fill" objectFit="cover" />
+            </div>
+            <h2 className="text-gray-400">Start exploring</h2>
           </div>
-          <h2 className="text-gray-400">Start exploring</h2>
-        </div>
+        ) : (
+          <Movies dataMovie={dataMovie} />
+        )}
       </main>
     </div>
   );
+}
+
+export async function getServerSideProps({ query }) {
+  if (query.s) {
+    const res = await fetch(
+      `http://www.omdbapi.com/?apikey=${process.env.MOVIE_DATABASE_API_KEY}&s=${query.s}&type=movie&series`
+    );
+    console.log(res);
+
+    const data = await res.json();
+    if (data.Response === "False") {
+      return {
+        props: {
+          message: "Too many results",
+        },
+      };
+    }
+    console.log(data);
+    const movieIDArray = data.Search.map((movie) => movie.imdbID);
+
+    const movieDetails = await Promise.all(
+      movieIDArray.map(async (id) => {
+        const res = await fetch(
+          `http://www.omdbapi.com/?apikey=${process.env.MOVIE_DATABASE_API_KEY}&i=${id}`
+        );
+        const data = await res.json();
+        return data;
+      })
+    );
+
+    return {
+      props: { movieDetails }, // will be passed to the page component as props
+    };
+  }
+  return {
+    props: {
+      message: "Please enter a search term",
+    },
+  };
 }
