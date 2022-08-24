@@ -39,6 +39,7 @@ export default function Home(props) {
   }, [storedMovies]);
 
   function addToWatchlist(e, id) {
+    if (storedMovies.find((item) => item.imdbID === id)) return;
     setStoredMovies((oldState) => {
       let item = dataMovie.filter((movie) => movie.imdbID === id);
       return [...oldState, ...item];
@@ -107,14 +108,20 @@ export default function Home(props) {
         />
         {message && <h2>{message}</h2>}
         {!dataMovie[0].title ? (
-          <div className="h-[calc(100vh-200px)] w-full flex flex-col items-center px-8">
-            <div className="h-[80px] w-[80px] relative mt-32">
-              <Image src={explore} layout="fill" objectFit="cover" />
+          <div className="h-[calc(100vh-200px)] md:h-[calc(100vh-300px)] lg:h-[calc(100vh-400px)] w-full flex flex-col items-center px-8  relative">
+            <div className=" flex flex-col items-center justify-center absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]">
+              <div className="h-[80px] w-[80px] relative">
+                <Image src={explore} layout="fill" objectFit="cover" />
+              </div>
+              <h2 className="text-gray-400">Start exploring</h2>
             </div>
-            <h2 className="text-gray-400">Start exploring</h2>
           </div>
         ) : (
-          <Movies dataMovie={dataMovie} addToWatchlist={addToWatchlist} />
+          <Movies
+            dataMovie={dataMovie}
+            addToWatchlist={addToWatchlist}
+            page={"index"}
+          />
         )}
       </main>
     </div>

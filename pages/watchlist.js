@@ -4,6 +4,7 @@ import explore from "../src/img/explore.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { AiOutlineSearch, AiFillPlusCircle } from "react-icons/ai";
+import Movies from "../src/components/Movies";
 
 const watchlist = () => {
   const [storedMovies, setStoredMovies] = useState([]);
@@ -14,7 +15,11 @@ const watchlist = () => {
     }
   }, []);
 
-  console.log(storedMovies);
+  function removeWatchlist(e, id) {
+    const removedMovie = storedMovies.filter((movie) => movie.imdbID !== id);
+    localStorage.setItem("storedMovies", JSON.stringify(removedMovie));
+    location.reload();
+  }
 
   return (
     <>
@@ -39,17 +44,27 @@ const watchlist = () => {
             </div>
           </div>
 
-          <div className="h-[calc(100vh-200px)] w-full flex flex-col items-center px-8">
-            <div className="h-full w-full flex flex-col justify-center items-center gap-3 -mt-5">
-              <h2 className="text-gray-400">
-                Your watchlist is looking a little empty...
-              </h2>
-              <Link href="/">
-                <a className="flex items-center gap-2">
-                  <AiFillPlusCircle className="inline" size={20} />
-                  Let's add some movies!
-                </a>
-              </Link>
+          <div className="h-[calc(100vh-200px)] md:h-[calc(100vh-300px)] lg:h-[calc(100vh-400px)] w-full flex flex-col items-center px-8">
+            <div className="w-full h-full flex flex-col justify-start items-center gap-3 relative">
+              {storedMovies.length ? (
+                <Movies
+                  dataMovie={storedMovies}
+                  page={"watch"}
+                  removeWatchlist={removeWatchlist}
+                />
+              ) : (
+                <div className=" absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] flex flex-col items-center justify-center ">
+                  <h2 className="text-gray-400">
+                    Your watchlist is looking a little empty...
+                  </h2>
+                  <Link href="/">
+                    <a className="flex items-center gap-2">
+                      <AiFillPlusCircle className="inline" size={20} />
+                      Let's add some movies!
+                    </a>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </main>
